@@ -1,0 +1,82 @@
+#developed by Keila Elena Ocaña-Drouaillet
+class RISCCPU:
+    def __init__(self):
+        # 16 registros de propósito general (R0-R15)
+        self.registers = [0] * 16
+        # Memoria de datos (256 celdas de memoria)
+        self.memory = [0] * 256
+        # Contador de programa (PC)
+        self.pc = 0
+        # Flag para detener la CPU
+        self.halted = False
+
+    def load_program(self, program):
+        """Carga un programa en la memoria."""
+        self.memory[:len(program)] = program
+
+    def fetch(self):
+        """Obtiene la instrucción actual de la memoria."""
+        instruction = self.memory[self.pc]
+        self.pc += 1
+        return instruction
+
+    def decode_and_execute(self, instruction):
+        """Decodifica y ejecuta la instrucción RISC."""
+        op, *args = instruction
+        
+        if op == 'ADD':
+            rd, rs1, rs2 = args
+            self.registers[rd] = self.registers[rs1] + self.registers[rs2]
+        elif op == 'SUB':
+            rd, rs1, rs2 = args
+            self.registers[rd] = self.registers[rs1] - self.registers[rs2]
+        elif op == 'AND':
+            rd, rs1, rs2 = args
+            self.registers[rd] = self.registers[rs1] & self.registers[rs2]
+        elif op == 'OR':
+            rd, rs1, rs2 = args
+            self.registers[rd] = self.registers[rs1] | self.registers[rs2]
+        elif op == 'LOAD':
+            rd, addr = args
+            self.registers[rd] = self.memory[addr]
+        elif op == 'STORE':
+            rs, addr = args
+            self.memory[addr] = self.registers[rs]
+        elif op == 'JMP':
+            self.pc = args[0]
+        elif op == 'BEQ':
+            rs1, rs2, offset = args
+            if self.registers[rs1] == self.registers[rs2]:
+                self.pc += offset
+        elif op == 'HALT':
+            self.halted = True
+
+    def run(self):
+        """Ejecuta el ciclo de instrucción hasta que se detenga."""
+        while not self.halted:
+            instruction = self.fetch()
+            self.decode_and_execute(instruction)
+            self.print_state()
+
+    def print_state(self):
+        """Imprime el estado actual de los registros y la PC."""
+        print(f"PC: {self.pc} | Registros: {self.registers[:8]} | Memoria: {self.memory[:16]}")
+
+# Ejemplo de un programa simple en RISC
+program = [
+    ('LOAD', 1, 10),    # R1 = MEM[10]
+    ('LOAD', 2, 11),    # R2 = MEM[11]
+    ('ADD', 3, 1, 2),   # R3 = R1 + R2
+    ('STORE', 3, 12),   # MEM[12] = R3
+    ('SUB', 4, 3, 1),   # R4 = R3 - R1
+    ('BEQ', 1, 2, 2),   # If R1 == R2, PC += 2
+    ('JMP', 0),         # PC = 0 (salto a la instrucción 0)
+    ('HALT',)           # Detener la CPU
+]
+
+# Crear una instancia de la CPU RISC
+cpu = RISCCPU()
+# Cargar el programa en la memoria
+cpu.load_program(program)
+# Ejecutar el programa
+cpu.run()
